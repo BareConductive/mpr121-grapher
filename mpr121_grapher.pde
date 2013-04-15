@@ -15,7 +15,7 @@ final int baselineColour = color(0,0,255,200);
 final int touchedColour = color(255,128,0,200);
 final int releasedColour = color(0,128,128,200);
 final int textColour = color(100);
-final int touchColour = color(128,0,255,200);
+final int touchColour = color(255,0,255,200);
 final int releaseColour = color(255, 255, 255, 200);
 
 final int graphFooterLeft = 20;
