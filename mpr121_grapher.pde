@@ -3,6 +3,12 @@ import processing.serial.*;
 final int numElectrodes = 13; // includes proximity electrode 
 final int numGraphPoints = 200;
 final int tenBits = 1024;
+
+final int graphsLeft = 20;
+final int graphsTop = 20;
+final int graphsWidth = 984;
+final int graphsHeight = 540;
+final int numVerticalDivisions = 8;
  
 Serial inPort;        // The serial port
 String inString;      // Input string from serial port
@@ -11,6 +17,7 @@ int lf = 10;          // ASCII linefeed
 int[] filteredData, baselineVals, diffs, touchThresholds, releaseThresholds; 
 int[][] filteredGraph, baselineGraph, touchGraph, releaseGraph;
 int globalGraphPtr = 0;
+boolean firstRead = true;
 
 void setup(){
   size(1024, 600);
@@ -34,27 +41,42 @@ void setup(){
 void draw(){ 
   background(200); 
   stroke(255);
-  //text("received: " + inString, 10,50);
-//  if(splitString != null){
-//    for(int i=0; i<splitString.length; i++){
-//      text(splitString[i], 10, 50+i*32);
-//    }  
-//  }
-  
-//  if(diffs != null){
-//    for(int i=0; i<diffs.length; i++){
-//      text(diffs[i], 10, 50+i*32);
-//    }  
-//  }  
-  drawGraphs(filteredGraph,0,20,20,984,540, color(255,0,0,200));
-  drawGraphs(baselineGraph,0,20,20,984,540, color(0,0,255,200));
-  drawGraphs(touchGraph,0,20,20,984,540, color(255,255,0,200));
-  drawGraphs(releaseGraph,0,20,20,984,540, color(0,255,0,200));
-  //drawGraphs(filteredGraph,0,0,0,0,0);
-  drawLevels(diffs);
-  //line(0,0,100,100);
-  drawText(touchThresholds);
+  drawGrid();
+  drawGraphs(filteredGraph,0, color(255,0,0,200));
+  drawGraphs(baselineGraph,0, color(0,0,255,200));
+  drawGraphs(touchGraph,0, color(255,255,0,200));
+  drawGraphs(releaseGraph,0, color(0,255,0,200));
+  drawYlabels();
 }
+
+
+void serialEvent(Serial p) { 
+  
+  int[] dataToUpdate;
+  
+  inString = p.readString(); 
+  splitString = splitTokens(inString, ":,");
+  
+  if(firstRead && splitString[0].equals("DIFF")){
+    firstRead = false;
+  } else {
+    if(splitString[0].equals("TTHS")){
+      updateArray(touchThresholds);
+      //println("TTHS"); 
+    } else if(splitString[0].equals("RTHS")){
+      updateArray(releaseThresholds);
+      //println("RTHS"); 
+    } else if(splitString[0].equals("FDAT")){
+      updateArray(filteredData); 
+    } else if(splitString[0].equals("BVAL")){
+      updateArray(baselineVals);
+    } else if(splitString[0].equals("DIFF")){
+      updateArray(diffs);
+      updateGraphs(); // update graphs when we get a DIFF line
+                      // as this is the last of our dataset
+    }
+  }
+} 
 
 void drawText(int[] arrayToDraw){
   fill(0);
@@ -68,33 +90,6 @@ void drawLevels(int[] arrayToDraw){
     rect(40+75*i, 295-arrayToDraw[i], 50, 10);
   }   
 }
-
-void serialEvent(Serial p) { 
-  
-  int[] dataToUpdate;
-  
-  inString = p.readString(); 
-  splitString = splitTokens(inString, ":,");
-  
-  if(splitString[0].equals("TTHS")){
-    updateArray(touchThresholds);
-    //println("TTHS"); 
-  } else if(splitString[0].equals("RTHS")){
-    updateArray(releaseThresholds);
-    //println("RTHS"); 
-  } else if(splitString[0].equals("FDAT")){
-    updateArray(filteredData); 
-  } else if(splitString[0].equals("BVAL")){
-    updateArray(baselineVals);
-  } else if(splitString[0].equals("DIFF")){
-    updateArray(diffs);
-    updateGraphs(); // update graphs when we get a DIFF line
-                    // as this is the last of the trio
-  } else {
-    println("didn't find tag");  
-  }
-  
-} 
 
 void updateArray(int[] array){
   if(array != null){
@@ -125,7 +120,7 @@ void updateGraphs(){
   
 }
 
-void drawGraphs(int[][] graph, int electrode, float left, float top, float wth, float hgt, int graphColour){
+void drawGraphs(int[][] graph, int electrode, int graphColour){
   int scratchColor =g.strokeColor;
   float scratchWeight = g.strokeWeight;
   stroke(graphColour);
@@ -138,33 +133,19 @@ void drawGraphs(int[][] graph, int electrode, float left, float top, float wth, 
   int lastY = -1;
   int thisX = -1;
   int thisY = -1;
-  
-  //if(--localGraphPtr < 0) localGraphPtr = numGraphPoints - 1;
    
   while(numPointsDrawn < numGraphPoints){
-    thisX = (int)(left+(numPointsDrawn*wth/numGraphPoints));
-    //thisX = (int)(left+numPointsDrawn);
-    //println(thisX);
-    //thisY = 500-(array[0][localGraphPtr]/2);
-    thisY = (int)top+ (int)(hgt*(1-((float)graph[electrode][localGraphPtr] / (float)tenBits)));
-    //println(thisY);
+    thisX = (int)(graphsLeft+(numPointsDrawn*graphsWidth/numGraphPoints));
+    thisY = (int)graphsTop+ (int)(graphsHeight*(1-((float)graph[electrode][localGraphPtr] / (float)tenBits)));
   
     if(lastX>=0 && lastY>=0){
       line(lastX, lastY, thisX, thisY);
-//      print(lastX);
-//      print(",");
-//      print(lastY);
-//      print("->");
-//      print(thisX);
-//      print(",");
-//      println(thisY);
-      //println("beep");
     }  
+    
     lastX = thisX;
     lastY = thisY;
     if(++localGraphPtr>=numGraphPoints) localGraphPtr = 0;
     numPointsDrawn++;
-    //println(numPointsDrawn);
   }
   
   stroke(scratchColor);
@@ -172,3 +153,29 @@ void drawGraphs(int[][] graph, int electrode, float left, float top, float wth, 
    
 }
 
+void drawGrid(){
+  int scratchColor =g.strokeColor;
+  float scratchWeight = g.strokeWeight;
+
+  stroke(100);
+  strokeWeight(1);
+
+  for(int i=0; i<=numVerticalDivisions; i++){
+    line(graphsLeft, graphsTop+i*(graphsHeight/numVerticalDivisions), graphsLeft+graphsWidth, graphsTop+i*(graphsHeight/numVerticalDivisions));   
+  }
+  
+  stroke(scratchColor);
+  strokeWeight(scratchWeight);
+}
+
+void drawYlabels(){
+  int scratchFillColor = g.fillColor;
+  
+  fill(100);
+  
+  for(int i=0; i<=numVerticalDivisions; i++){
+    text((numVerticalDivisions-i)*tenBits/numVerticalDivisions, graphsLeft,  graphsTop+i*(graphsHeight/numVerticalDivisions)-3); 
+  }
+  
+  fill(scratchFillColor);
+}
