@@ -1,7 +1,7 @@
 import processing.serial.*; 
  
 final int numElectrodes = 13; // includes proximity electrode 
-final int numGraphPoints = 200;
+final int numGraphPoints = 300;
 final int tenBits = 1024;
 
 final int graphsLeft = 20;
@@ -9,6 +9,17 @@ final int graphsTop = 20;
 final int graphsWidth = 984;
 final int graphsHeight = 540;
 final int numVerticalDivisions = 8;
+
+final int filteredColour = color(255,0,0,200);
+final int baselineColour = color(0,0,255,200);
+final int touchedColour = color(255,128,0,200);
+final int releasedColour = color(0,128,128,200);
+final int textColour = color(100);
+
+final int graphFooterLeft = 20;
+final int graphFooterTop = graphsTop + graphsHeight + 20;
+
+
  
 Serial inPort;        // The serial port
 String inString;      // Input string from serial port
@@ -18,6 +29,8 @@ int[] filteredData, baselineVals, diffs, touchThresholds, releaseThresholds;
 int[][] filteredGraph, baselineGraph, touchGraph, releaseGraph;
 int globalGraphPtr = 0;
 boolean firstRead = true;
+
+int electrodeNumber = 5;
 
 void setup(){
   size(1024, 600);
@@ -42,11 +55,12 @@ void draw(){
   background(200); 
   stroke(255);
   drawGrid();
-  drawGraphs(filteredGraph,0, color(255,0,0,200));
-  drawGraphs(baselineGraph,0, color(0,0,255,200));
-  drawGraphs(touchGraph,0, color(255,255,0,200));
-  drawGraphs(releaseGraph,0, color(0,255,0,200));
+  drawGraphs(filteredGraph,electrodeNumber, filteredColour);
+  drawGraphs(baselineGraph,electrodeNumber, baselineColour);
+  drawGraphs(touchGraph,electrodeNumber, touchedColour);
+  drawGraphs(releaseGraph,electrodeNumber, releasedColour);
   drawYlabels();
+  drawGraphFooter();
 }
 
 
@@ -157,7 +171,7 @@ void drawGrid(){
   int scratchColor =g.strokeColor;
   float scratchWeight = g.strokeWeight;
 
-  stroke(100);
+  stroke(textColour);
   strokeWeight(1);
 
   for(int i=0; i<=numVerticalDivisions; i++){
@@ -171,11 +185,32 @@ void drawGrid(){
 void drawYlabels(){
   int scratchFillColor = g.fillColor;
   
-  fill(100);
+  fill(textColour);
   
   for(int i=0; i<=numVerticalDivisions; i++){
     text((numVerticalDivisions-i)*tenBits/numVerticalDivisions, graphsLeft,  graphsTop+i*(graphsHeight/numVerticalDivisions)-3); 
   }
+  
+  fill(scratchFillColor);
+}
+
+void drawGraphFooter(){
+  int scratchFillColor = g.fillColor;
+
+  fill(textColour);
+  text("electrode " + electrodeNumber, graphFooterLeft, graphFooterTop);
+ 
+  fill(filteredColour);
+  text("filtered data", graphFooterLeft+100, graphFooterTop); 
+  
+  fill(baselineColour);
+  text("baseline data", graphFooterLeft+200, graphFooterTop);  
+  
+  fill(touchedColour);
+  text("touched level", graphFooterLeft+300, graphFooterTop);  
+  
+  fill(releasedColour);
+  text("released level", graphFooterLeft+400, graphFooterTop);  
   
   fill(scratchFillColor);
 }
