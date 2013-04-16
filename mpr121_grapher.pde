@@ -1,4 +1,5 @@
 import processing.serial.*; 
+import controlP5.*;
  
 final int numElectrodes = 13; // includes proximity electrode 
 final int numGraphPoints = 300;
@@ -21,9 +22,11 @@ final int releaseColour = color(255, 255, 255, 200);
 final int graphFooterLeft = 20;
 final int graphFooterTop = graphsTop + graphsHeight + 20;
 
-
+ControlP5 cp5;
+DropdownList electrodeSelector, serialSelector;
  
 Serial inPort;        // The serial port
+String[] serialList;
 String inString;      // Input string from serial port
 String[] splitString; // Input string array after splitting 
 int lf = 10;          // ASCII linefeed 
@@ -32,33 +35,21 @@ int[][] filteredGraph, baselineGraph, touchGraph, releaseGraph, statusGraph;
 int globalGraphPtr = 0;
 boolean firstRead = true;
 
-int electrodeNumber = 5;
+int electrodeNumber = 0;
+int serialNumber = 4;
 
 void setup(){
   size(1024, 600);
   
-  filteredData = new int[numElectrodes];
-  baselineVals = new int[numElectrodes];
-  diffs = new int[numElectrodes];
-  touchThresholds = new int[numElectrodes];
-  releaseThresholds = new int[numElectrodes];
-  status = new int[numElectrodes];
-  lastStatus = new int[numElectrodes];
+  setupGraphs();
   
-  for(int i=0; i<numElectrodes; i++){
-    status[i] = 128; // 128 is an unused value from the Arduino input
-    lastStatus[i] = 128;  
-  }
-  
-  filteredGraph = new int[numElectrodes][numGraphPoints];
-  baselineGraph = new int[numElectrodes][numGraphPoints];
-  touchGraph =    new int[numElectrodes][numGraphPoints];
-  releaseGraph =  new int[numElectrodes][numGraphPoints];
-  statusGraph =  new int[numElectrodes][numGraphPoints];
-  
-  println(Serial.list());
-  inPort = new Serial(this, Serial.list()[4], 57600); 
+  serialList = Serial.list();
+  println(serialList);
+  inPort = new Serial(this, Serial.list()[serialNumber], 57600);
   inPort.bufferUntil(lf); 
+  
+  setupGUI();
+  
 }
 
 void draw(){ 
@@ -103,178 +94,60 @@ void serialEvent(Serial p) {
   }
 } 
 
-void drawText(int[] arrayToDraw){
-  fill(0);
-  for(int i=0; i<arrayToDraw.length; i++){
-    text(arrayToDraw[i], 20, 50+20*i);
-  }    
-}
+void controlEvent(ControlEvent theEvent) {
+  // DropdownList is of type ControlGroup.
+  // A controlEvent will be triggered from inside the ControlGroup class.
+  // therefore you need to check the originator of the Event with
+  // if (theEvent.isGroup())
+  // to avoid an error message thrown by controlP5.
 
-void drawLevels(int[] arrayToDraw){
-  for(int i=0; i<arrayToDraw.length; i++){
-    rect(40+75*i, 295-arrayToDraw[i], 50, 10);
-  }   
-}
-
-void updateArray(int[] array){
-  if(array != null){
-    for(int i=0; i<min(array.length, splitString.length-1); i++){
-      try{
-        array[i] = Integer.parseInt(trim(splitString[i+1]));
-      } catch (NumberFormatException e){
-        array[i] = 0; 
-      } 
-      //println(array[i]); 
+  if (theEvent.isGroup()) {
+    // check if the Event was triggered from a ControlGroup
+    println("event from group : "+theEvent.getGroup().getValue()+" from "+theEvent.getGroup());
+    if(theEvent.getGroup().getName().contains("electrodeSel")){
+      electrodeNumber = (int)theEvent.getGroup().getValue();
+    } else if(theEvent.getGroup().getName().contains("serialSel")) {
+      serialNumber = (int)theEvent.getGroup().getValue();
+      //inPort.stop();
+      //inPort = new Serial(this, Serial.list()[serialNumber], 57600);   
     }
-  }  else {
-    //println ("null array");  
+  } 
+  else if (theEvent.isController()) {
+    println("event from controller : "+theEvent.getController().getValue()+" from "+theEvent.getController());
   }
 }
 
-void updateGraphs(){
-  
-  int lastGraphPtr = globalGraphPtr-1;
-  if(lastGraphPtr < 0) lastGraphPtr = numGraphPoints-1;
-  
-  for(int i=0; i<numElectrodes; i++){
-    filteredGraph[i][globalGraphPtr] = filteredData[i];
-    baselineGraph[i][globalGraphPtr] = baselineVals[i]; 
-    touchGraph[i][globalGraphPtr] = baselineVals[i] - touchThresholds[i];
-    releaseGraph[i][globalGraphPtr] = baselineVals[i] - releaseThresholds[i]; 
-    if(lastStatus[i]==0 && status[i]==0xFF){
-      // touched
-      statusGraph[i][globalGraphPtr] = 1;    
-    } else if(lastStatus[i]==0xFF && status[i]==0x00){
-      // released
-     statusGraph[i][globalGraphPtr] = -1;  
-    } else {
-     statusGraph[i][globalGraphPtr] = 0;  
-    }
-  }
-  
-  for(int i=0; i<numElectrodes; i++){
-    lastStatus[i] = status[i];
-  }
-  
-  if(++globalGraphPtr >= numGraphPoints) globalGraphPtr = 0;
-  
+
+void customiseDL(DropdownList ddl) {
+  // a convenience function to customize a DropdownList
+  ddl.setBackgroundColor(color(190));
+  ddl.setItemHeight(20);
+  ddl.setBarHeight(15);
+  ddl.captionLabel().set("dropdown");
+  ddl.captionLabel().style().marginTop = 3;
+  ddl.captionLabel().style().marginLeft = 3;
+  ddl.valueLabel().style().marginTop = 3;
+  ddl.setColorBackground(color(60));
+  ddl.setColorActive(color(255, 128));
+  ddl.setWidth(200);
 }
 
-void drawGraphs(int[][] graph, int electrode, int graphColour){
-  int scratchColor =g.strokeColor;
-  float scratchWeight = g.strokeWeight;
-  stroke(graphColour);
-  strokeWeight(2);
-  
-  int localGraphPtr = globalGraphPtr;
-  int numPointsDrawn = 0;
-  
-  int lastX = -1;
-  int lastY = -1;
-  int thisX = -1;
-  int thisY = -1;
-   
-  while(numPointsDrawn < numGraphPoints){
-    thisX = (int)(graphsLeft+(numPointsDrawn*graphsWidth/numGraphPoints));
-    thisY = (int)graphsTop+ (int)(graphsHeight*(1-((float)graph[electrode][localGraphPtr] / (float)tenBits)));
-  
-    if(lastX>=0 && lastY>=0){
-      line(lastX, lastY, thisX, thisY);
-    }  
-    
-    lastX = thisX;
-    lastY = thisY;
-    if(++localGraphPtr>=numGraphPoints) localGraphPtr = 0;
-    numPointsDrawn++;
+void setupGUI(){
+  cp5 = new ControlP5(this);
+
+  serialSelector = cp5.addDropdownList("serialSel").setPosition(graphsLeft+graphsWidth-200, 75);
+  customiseDL(serialSelector);
+  serialSelector.captionLabel().set("serial port");
+  for (int i=0;i<serialList.length;i++) {
+    serialSelector.addItem(serialList[i], i);
   }
+  serialSelector.setIndex(serialNumber);
   
-  stroke(scratchColor);
-  strokeWeight(scratchWeight);
-   
-}
-
-void drawStatus(int electrode){
-  int scratchColor =g.strokeColor;
-  float scratchWeight = g.strokeWeight;
-  strokeWeight(2);
-  
-  int thisX;
-  
-  int localGraphPtr = globalGraphPtr;
-  int numPointsDrawn = 0;
-   
-  while(numPointsDrawn < numGraphPoints){
-    thisX = (int)(graphsLeft+(numPointsDrawn*graphsWidth/numGraphPoints));
-  
-    if(statusGraph[electrode][localGraphPtr] == 1){
-      //println("beep");
-      stroke(touchColour);
-      line(thisX, graphsTop, thisX, graphsTop+graphsHeight);  
-    } else if(statusGraph[electrode][localGraphPtr] == -1){
-      //println("beep");
-      stroke(releaseColour);
-      line(thisX, graphsTop, thisX, graphsTop+graphsHeight);  
-    }
-
-    if(++localGraphPtr>=numGraphPoints) localGraphPtr = 0;
-    numPointsDrawn++;
+  electrodeSelector = cp5.addDropdownList("electrodeSel").setPosition(graphsLeft+graphsWidth-200, 50);
+  customiseDL(electrodeSelector);
+  electrodeSelector.captionLabel().set("electrode number");
+  for (int i=0;i<numElectrodes;i++) {
+    electrodeSelector.addItem("electrode "+i, i);
   }
-  
-  stroke(scratchColor);
-  strokeWeight(scratchWeight);
-   
-}
-
-void drawGrid(){
-  int scratchColor =g.strokeColor;
-  float scratchWeight = g.strokeWeight;
-
-  stroke(textColour);
-  strokeWeight(1);
-
-  for(int i=0; i<=numVerticalDivisions; i++){
-    line(graphsLeft, graphsTop+i*(graphsHeight/numVerticalDivisions), graphsLeft+graphsWidth, graphsTop+i*(graphsHeight/numVerticalDivisions));   
-  }
-  
-  stroke(scratchColor);
-  strokeWeight(scratchWeight);
-}
-
-void drawYlabels(){
-  int scratchFillColor = g.fillColor;
-  
-  fill(textColour);
-  
-  for(int i=0; i<=numVerticalDivisions; i++){
-    text((numVerticalDivisions-i)*tenBits/numVerticalDivisions, graphsLeft,  graphsTop+i*(graphsHeight/numVerticalDivisions)-3); 
-  }
-  
-  fill(scratchFillColor);
-}
-
-void drawGraphFooter(){
-  int scratchFillColor = g.fillColor;
-
-  fill(textColour);
-  text("electrode " + electrodeNumber, graphFooterLeft, graphFooterTop);
- 
-  fill(filteredColour);
-  text("filtered data", graphFooterLeft+200, graphFooterTop); 
-  
-  fill(baselineColour);
-  text("baseline data", graphFooterLeft+300, graphFooterTop);  
-  
-  fill(touchedColour);
-  text("touched level", graphFooterLeft+400, graphFooterTop);  
-  
-  fill(releasedColour);
-  text("released level", graphFooterLeft+500, graphFooterTop);  
-  
-  fill(touchColour);
-  text("touch event", graphFooterLeft+600, graphFooterTop); 
-  
-  fill(releaseColour);
-  text("release event", graphFooterLeft+700, graphFooterTop); 
-  
-  fill(scratchFillColor);
+  electrodeSelector.setIndex(electrodeNumber);  
 }
