@@ -15,7 +15,7 @@ final int filteredColour = color(255,0,0,200);
 final int baselineColour = color(0,0,255,200);
 final int touchedColour = color(255,128,0,200);
 final int releasedColour = color(0,128,128,200);
-final int textColour = color(100);
+final int textColour = color(60);
 final int touchColour = color(255,0,255,200);
 final int releaseColour = color(255, 255, 255, 200);
 
@@ -24,9 +24,13 @@ final int graphFooterTop = graphsTop + graphsHeight + 20;
 
 final int numFooterLabels = 6;
 
+boolean serialSelected = false;
+boolean firstRead = true;
+boolean paused = false;
+
 ControlP5 cp5;
 DropdownList electrodeSelector, serialSelector;
-Textlabel labels[];
+Textlabel labels[], serialPrompt, pauseInstructions;
  
 Serial inPort;        // The serial port
 String[] serialList;
@@ -36,7 +40,6 @@ int lf = 10;          // ASCII linefeed
 int[] filteredData, baselineVals, diffs, touchThresholds, releaseThresholds, status, lastStatus; 
 int[][] filteredGraph, baselineGraph, touchGraph, releaseGraph, statusGraph;
 int globalGraphPtr = 0;
-boolean firstRead = true;
 
 int electrodeNumber = 0;
 int serialNumber = 4;
@@ -47,53 +50,56 @@ void setup(){
   setupGraphs();
   
   serialList = Serial.list();
-  println(serialList);
-  inPort = new Serial(this, Serial.list()[serialNumber], 57600);
-  inPort.bufferUntil(lf); 
+  println(serialList); 
   
-  setupGUI();
-  setupLabels();
-  
+  //setupGUI();
+  //setupLabels();
+  setupSerialPrompt();
 }
 
 void draw(){ 
   background(200); 
   stroke(255);
-  drawGrid();
-  drawGraphs(filteredGraph,electrodeNumber, filteredColour);
-  drawGraphs(baselineGraph,electrodeNumber, baselineColour);
-  drawGraphs(touchGraph,electrodeNumber, touchedColour);
-  drawGraphs(releaseGraph,electrodeNumber, releasedColour);
-  drawStatus(electrodeNumber);
+  if(serialSelected){
+    drawGrid();
+    drawGraphs(filteredGraph,electrodeNumber, filteredColour);
+    drawGraphs(baselineGraph,electrodeNumber, baselineColour);
+    drawGraphs(touchGraph,electrodeNumber, touchedColour);
+    drawGraphs(releaseGraph,electrodeNumber, releasedColour);
+    drawStatus(electrodeNumber);
+  }
   //drawYlabels();
   //drawGraphFooter();
 }
 
 
-void serialEvent(Serial p) { 
+void serialEvent(Serial p) {
+ 
+  if(serialSelected && !paused){ 
   
-  int[] dataToUpdate;
-  
-  inString = p.readString(); 
-  splitString = splitTokens(inString, ":,");
-  
-  if(firstRead && splitString[0].equals("DIFF")){
-    firstRead = false;
-  } else {
-    if(splitString[0].equals("TOUCH")){
-      updateArray(status); 
-    } else if(splitString[0].equals("TTHS")){
-      updateArray(touchThresholds); 
-    } else if(splitString[0].equals("RTHS")){
-      updateArray(releaseThresholds);
-    } else if(splitString[0].equals("FDAT")){
-      updateArray(filteredData); 
-    } else if(splitString[0].equals("BVAL")){
-      updateArray(baselineVals);
-    } else if(splitString[0].equals("DIFF")){
-      updateArray(diffs);
-      updateGraphs(); // update graphs when we get a DIFF line
-                      // as this is the last of our dataset
+    int[] dataToUpdate;
+    
+    inString = p.readString(); 
+    splitString = splitTokens(inString, ":,");
+    
+    if(firstRead && splitString[0].equals("DIFF")){
+      firstRead = false;
+    } else {
+      if(splitString[0].equals("TOUCH")){
+        updateArray(status); 
+      } else if(splitString[0].equals("TTHS")){
+        updateArray(touchThresholds); 
+      } else if(splitString[0].equals("RTHS")){
+        updateArray(releaseThresholds);
+      } else if(splitString[0].equals("FDAT")){
+        updateArray(filteredData); 
+      } else if(splitString[0].equals("BVAL")){
+        updateArray(baselineVals);
+      } else if(splitString[0].equals("DIFF")){
+        updateArray(diffs);
+        updateGraphs(); // update graphs when we get a DIFF line
+                        // as this is the last of our dataset
+      }
     }
   }
 } 
@@ -107,17 +113,30 @@ void controlEvent(ControlEvent theEvent) {
 
   if (theEvent.isGroup()) {
     // check if the Event was triggered from a ControlGroup
-    println("event from group : "+theEvent.getGroup().getValue()+" from "+theEvent.getGroup());
+    //println("event from group : "+theEvent.getGroup().getValue()+" from "+theEvent.getGroup());
     if(theEvent.getGroup().getName().contains("electrodeSel")){
       electrodeNumber = (int)theEvent.getGroup().getValue();
     } else if(theEvent.getGroup().getName().contains("serialSel")) {
       serialNumber = (int)theEvent.getGroup().getValue();
+      inPort = new Serial(this, Serial.list()[serialNumber], 57600);
+      inPort.bufferUntil(lf);
+      
+      disableSerialPrompt();
+      setupRunGUI();
+      setupLabels();
+      serialSelected = true;
       //inPort.stop();
       //inPort = new Serial(this, Serial.list()[serialNumber], 57600);   
     }
   } 
   else if (theEvent.isController()) {
-    println("event from controller : "+theEvent.getController().getValue()+" from "+theEvent.getController());
+    //println("event from controller : "+theEvent.getController().getValue()+" from "+theEvent.getController());
+  }
+}
+
+void keyPressed() {
+  if (key == 'p' || key == 'P') {
+    paused = !paused;
   }
 }
 
@@ -134,10 +153,6 @@ void customiseDL(DropdownList ddl) {
   ddl.setColorBackground(color(60));
   ddl.setColorActive(color(255, 128));
   ddl.setWidth(200);
-}
-
-void customiseLabel(Textlabel label){
-  
 }
 
 void setupLabels(){
@@ -164,22 +179,45 @@ void setupLabels(){
 
 }
 
-void setupGUI(){
-  cp5 = new ControlP5(this);
-
-  serialSelector = cp5.addDropdownList("serialSel").setPosition(graphsLeft+graphsWidth-200, 75);
-  customiseDL(serialSelector);
-  serialSelector.captionLabel().set("serial port");
-  for (int i=0;i<serialList.length;i++) {
-    serialSelector.addItem(serialList[i], i);
-  }
-  serialSelector.setIndex(serialNumber);
+void setupRunGUI(){
   
-  electrodeSelector = cp5.addDropdownList("electrodeSel").setPosition(graphsLeft+graphsWidth-200, 50);
+  electrodeSelector = cp5.addDropdownList("electrodeSel").setPosition(graphsLeft+graphsWidth-300, 75);
   customiseDL(electrodeSelector);
   electrodeSelector.captionLabel().set("electrode number");
   for (int i=0;i<numElectrodes;i++) {
     electrodeSelector.addItem("electrode "+i, i);
   }
   electrodeSelector.setIndex(electrodeNumber);  
+  
+  pauseInstructions = cp5.addTextlabel("pauseInstructions")
+                .setText("PRESS P TO PAUSE, PRESS IT AGAIN TO RESUME")
+                .setPosition(graphsLeft+graphsWidth-300,40)
+                .setColorValue(textColour)
+                ;   
+}
+
+void setupSerialPrompt(){
+  cp5 = new ControlP5(this);
+  
+  serialPrompt = cp5.addTextlabel("serialPromptLabel")
+                  .setText("SELECT THE SERIAL PORT THAT YOUR BARE CONDUCTIVE TOUCH BOARD IS CONNECTED TO SO WE CAN BEGIN:")
+                  .setPosition(100,  100)
+                  .setColorValue(textColour)
+                  ;   
+  
+  serialSelector = cp5.addDropdownList("serialSel").setPosition(100, 150);
+  customiseDL(serialSelector);
+  serialSelector.captionLabel().set("serial port");
+  for (int i=0;i<serialList.length;i++) {
+    serialSelector.addItem(serialList[i], i);
+  }
+  //serialSelector.setIndex(serialNumber);
+  
+}
+
+void disableSerialPrompt(){
+
+  serialPrompt.setVisible(false);
+  serialSelector.setVisible(false);
+  
 }
