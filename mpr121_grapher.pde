@@ -22,8 +22,11 @@ final int releaseColour = color(255, 255, 255, 200);
 final int graphFooterLeft = 20;
 final int graphFooterTop = graphsTop + graphsHeight + 20;
 
+final int numFooterLabels = 6;
+
 ControlP5 cp5;
 DropdownList electrodeSelector, serialSelector;
+Textlabel labels[];
  
 Serial inPort;        // The serial port
 String[] serialList;
@@ -49,6 +52,7 @@ void setup(){
   inPort.bufferUntil(lf); 
   
   setupGUI();
+  setupLabels();
   
 }
 
@@ -61,8 +65,8 @@ void draw(){
   drawGraphs(touchGraph,electrodeNumber, touchedColour);
   drawGraphs(releaseGraph,electrodeNumber, releasedColour);
   drawStatus(electrodeNumber);
-  drawYlabels();
-  drawGraphFooter();
+  //drawYlabels();
+  //drawGraphFooter();
 }
 
 
@@ -130,6 +134,34 @@ void customiseDL(DropdownList ddl) {
   ddl.setColorBackground(color(60));
   ddl.setColorActive(color(255, 128));
   ddl.setWidth(200);
+}
+
+void customiseLabel(Textlabel label){
+  
+}
+
+void setupLabels(){
+  
+  labels = new Textlabel[numFooterLabels + numVerticalDivisions + 1];
+  String footerLabels[] = {"FILTERED DATA", "BASELINE DATA", "TOUCHED LEVEL", "RELEASED LEVEL", "TOUCH EVENT", "RELEASE EVENT"};
+  int footerColours[] = {filteredColour, baselineColour, touchedColour, releasedColour, touchColour, releaseColour};
+  
+  for(int i=0; i<numVerticalDivisions+1; i++){
+    labels[i] = cp5.addTextlabel(String.valueOf(tenBits-(i*tenBits/numVerticalDivisions)))
+                    .setText(String.valueOf(tenBits-(i*tenBits/numVerticalDivisions)))
+                    .setPosition(graphsLeft,  graphsTop+i*(graphsHeight/numVerticalDivisions)-10)
+                    .setColorValue(textColour)
+                    ; 
+  } 
+
+  for(int i=0; i<numFooterLabels; i++){
+    labels[i+numVerticalDivisions+1] = cp5.addTextlabel(footerLabels[i])
+                    .setText(footerLabels[i])
+                    .setPosition(graphFooterLeft+200+100*i,  graphFooterTop)
+                    .setColorValue(footerColours[i])
+                    ; 
+  } 
+
 }
 
 void setupGUI(){

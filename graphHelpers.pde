@@ -150,45 +150,6 @@ void drawGrid(){
   strokeWeight(scratchWeight);
 }
 
-void drawYlabels(){
-  int scratchFillColor = g.fillColor;
-  
-  fill(textColour);
-  
-  for(int i=0; i<=numVerticalDivisions; i++){
-    text((numVerticalDivisions-i)*tenBits/numVerticalDivisions, graphsLeft,  graphsTop+i*(graphsHeight/numVerticalDivisions)-3); 
-  }
-  
-  fill(scratchFillColor);
-}
-
-void drawGraphFooter(){
-  int scratchFillColor = g.fillColor;
-
-//  fill(textColour);
-//  text("electrode " + electrodeNumber, graphFooterLeft, graphFooterTop);
- 
-  fill(filteredColour);
-  text("filtered data", graphFooterLeft+200, graphFooterTop); 
-  
-  fill(baselineColour);
-  text("baseline data", graphFooterLeft+300, graphFooterTop);  
-  
-  fill(touchedColour);
-  text("touched level", graphFooterLeft+400, graphFooterTop);  
-  
-  fill(releasedColour);
-  text("released level", graphFooterLeft+500, graphFooterTop);  
-  
-  fill(touchColour);
-  text("touch event", graphFooterLeft+600, graphFooterTop); 
-  
-  fill(releaseColour);
-  text("release event", graphFooterLeft+700, graphFooterTop); 
-  
-  fill(scratchFillColor);
-}
-
 void drawText(int[] arrayToDraw){
   fill(0);
   for(int i=0; i<arrayToDraw.length; i++){
