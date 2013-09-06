@@ -17,6 +17,8 @@
 
 import processing.serial.*; 
 import controlP5.*;
+
+final int baudRate = 57600;
  
 final int numElectrodes = 13; // includes proximity electrode 
 final int numGraphPoints = 300;
@@ -135,7 +137,7 @@ void controlEvent(ControlEvent theEvent) {
       electrodeNumber = (int)theEvent.getGroup().getValue();
     } else if(theEvent.getGroup().getName().contains("serialSel")) {
       serialNumber = (int)theEvent.getGroup().getValue();
-      inPort = new Serial(this, Serial.list()[serialNumber], 57600);
+      inPort = new Serial(this, Serial.list()[serialNumber], baudRate);
       inPort.bufferUntil(lf);
       
       disableSerialPrompt();
@@ -143,7 +145,7 @@ void controlEvent(ControlEvent theEvent) {
       setupLabels();
       serialSelected = true;
       //inPort.stop();
-      //inPort = new Serial(this, Serial.list()[serialNumber], 57600);   
+      //inPort = new Serial(this, Serial.list()[serialNumber], baudRate);   
     }
   } 
   else if (theEvent.isController()) {
