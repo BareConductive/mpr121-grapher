@@ -99,7 +99,7 @@ void serialEvent(Serial p) {
     int[] dataToUpdate;
     
     inString = p.readString(); 
-    splitString = splitTokens(inString, ":,");
+    splitString = splitTokens(inString, ": ");
     
     if(firstRead && splitString[0].equals("DIFF")){
       firstRead = false;
