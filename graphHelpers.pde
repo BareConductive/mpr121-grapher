@@ -44,10 +44,10 @@ void updateGraphs(){
     baselineGraph[i][globalGraphPtr] = baselineVals[i]; 
     touchGraph[i][globalGraphPtr] = baselineVals[i] - touchThresholds[i];
     releaseGraph[i][globalGraphPtr] = baselineVals[i] - releaseThresholds[i]; 
-    if(lastStatus[i]==0 && status[i]==0xFF){
+    if(lastStatus[i]==0 && status[i]!=0x00){
       // touched
       statusGraph[i][globalGraphPtr] = 1;    
-    } else if(lastStatus[i]==0xFF && status[i]==0x00){
+    } else if(lastStatus[i]!=0x00 && status[i]==0x00){
       // released
      statusGraph[i][globalGraphPtr] = -1;  
     } else {
