@@ -68,7 +68,6 @@ void setupSerialPrompt(){
   for (int i=0;i<serialList.length;i++) {
     serialSelector.addItem(serialList[i], i);
   }
-  //serialSelector.setIndex(serialNumber);
   
 }
 

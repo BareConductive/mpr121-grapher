@@ -1,19 +1,30 @@
-/***********************************************************************
+/*******************************************************************************
 
-  MPR121 output grapher / debug plotter for Bare Conductive Touch Board
-  
-  Code by Stefan Dzisiewski-Smith, April 2013
-  
-  Based on examples from many others (Tom Igoe, Andreas Schlegel etc.)
-  
-  -------------------------------------------------------------------
-  
-  Depends on controlP5 being installed
-  
-  http://www.sojamo.de/libraries/controlP5/
+ Bare Conductive MPR121 output grapher / debug plotter for Touch Board
+ ---------------------------------------------------------------------
+ 
+ mpr121_grapher.pde - processing grapher for raw data from Touch Board
+ 
+ requires controlp5 to be in your processing libraries folder: 
+ http://www.sojamo.de/libraries/controlP5/
+ 
+ requires datastream on the Touch Board: 
+ https://github.com/BareConductive/mpr121/tree/public/Examples/DataStream
+ 
+ Bare Conductive code written by Stefan Dzisiewski-Smith.
+ 
+ This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 
+ Unported License (CC BY-SA 3.0) http://creativecommons.org/licenses/by-sa/3.0/
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
 
-***********************************************************************/
-
+*******************************************************************************/
 
 import processing.serial.*; 
 import controlP5.*;
@@ -71,8 +82,6 @@ void setup(){
   serialList = Serial.list();
   println(serialList); 
   
-  //setupGUI();
-  //setupLabels();
   setupSerialPrompt();
 }
 
@@ -87,8 +96,6 @@ void draw(){
     drawGraphs(releaseGraph,electrodeNumber, releasedColour);
     drawStatus(electrodeNumber);
   }
-  //drawYlabels();
-  //drawGraphFooter();
 }
 
 
@@ -144,12 +151,9 @@ void controlEvent(ControlEvent theEvent) {
       setupRunGUI();
       setupLabels();
       serialSelected = true;
-      //inPort.stop();
-      //inPort = new Serial(this, Serial.list()[serialNumber], baudRate);   
     }
   } 
   else if (theEvent.isController()) {
-    //println("event from controller : "+theEvent.getController().getValue()+" from "+theEvent.getController());
   }
 }
 
