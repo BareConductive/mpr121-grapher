@@ -8,7 +8,7 @@ Processing sketch that graphs capacitive electrode data from the [Bare Conductiv
 
 * [Processing](http://www.processing.org/download) 2.2+ with [controlP5](http://www.sojamo.de/libraries/controlP5/) library installed
 * Processing's instructions for installing libraries are available [here](http://wiki.processing.org/w/How_to_Install_a_Contributed_Library)
-* [datastream](https://github.com/BareConductive/mpr121/tree/public/Examples/DataStream) (running on [Bare Conductive Touch Board](http://www.bareconductive.com/shop/touch-board/))
+* [datastream](https://github.com/BareConductive/mpr121/tree/public/MPR121/Examples/DataStream) (running on [Bare Conductive Touch Board](http://www.bareconductive.com/shop/touch-board/))
  
 
 ## Install
