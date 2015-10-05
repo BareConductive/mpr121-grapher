@@ -158,7 +158,17 @@ void controlEvent(ControlEvent theEvent) {
 }
 
 void keyPressed() {
-  if (key == 'p' || key == 'P') {
+  if (key == CODED) {
+    if (keyCode == LEFT) {
+      if(electrodeSelector.getValue()>0){
+        electrodeSelector.setIndex((int)electrodeSelector.getValue()-1);
+      }
+    } else if (keyCode == RIGHT) {
+      if(electrodeSelector.getValue()<numElectrodes){
+        electrodeSelector.setIndex((int)electrodeSelector.getValue()+1);
+      }
+    } 
+  } else if (key == 'p' || key == 'P') {
     paused = !paused;
   }
 }
