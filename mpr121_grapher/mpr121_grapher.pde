@@ -5,7 +5,7 @@
  
  mpr121_grapher.pde - processing grapher for raw data from Touch Board
  
- requires controlp5 to be in your processing libraries folder: 
+ requires controlp5 (version 2.0.4) to be in your processing libraries folder: 
  http://www.sojamo.de/libraries/controlP5/
  
  requires datastream on the Touch Board: 
