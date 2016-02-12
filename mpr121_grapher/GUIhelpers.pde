@@ -1,15 +1,12 @@
-void customiseDL(DropdownList ddl) {
+void customiseSL(ScrollableList sl) {
   // a convenience function to customize a DropdownList
-  ddl.setBackgroundColor(color(190));
-  ddl.setItemHeight(20);
-  ddl.setBarHeight(15);
-  ddl.captionLabel().set("dropdown");
-  ddl.captionLabel().style().marginTop = 3;
-  ddl.captionLabel().style().marginLeft = 3;
-  ddl.valueLabel().style().marginTop = 3;
-  ddl.setColorBackground(color(60));
-  ddl.setColorActive(color(255, 128));
-  ddl.setWidth(200);
+  sl.setBackgroundColor(color(190));
+  sl.setItemHeight(20);
+  sl.setBarHeight(20);
+  sl.getCaptionLabel().set("dropdown");
+  sl.setColorBackground(color(60));
+  sl.setColorActive(color(255, 128));
+  sl.setSize(210,100);
 }
 
 void setupLabels(){
@@ -24,6 +21,7 @@ void setupLabels(){
                     .setPosition(graphsLeft,  graphsTop+i*(graphsHeight/numVerticalDivisions)-10)
                     .setColorValue(textColour)
                     ; 
+    labels[i].hide();
   } 
 
   for(int i=0; i<numFooterLabels; i++){
@@ -32,25 +30,35 @@ void setupLabels(){
                     .setPosition(graphFooterLeft+200+100*i,  graphFooterTop)
                     .setColorValue(footerColours[i])
                     ; 
+    labels[i+numVerticalDivisions+1].hide();
   } 
+  
+  pausedIndicator = cp5.addTextlabel("pausedIndicator")
+                  .setText("PAUSED")
+                  .setPosition(965,  graphFooterTop) 
+                  .setColorValue(color(255,0,0,200))
+                  .setVisible(false);
+                  ;    
 
 }
 
 void setupRunGUI(){
   
-  electrodeSelector = cp5.addDropdownList("electrodeSel").setPosition(graphsLeft+graphsWidth-300, 75);
-  customiseDL(electrodeSelector);
-  electrodeSelector.captionLabel().set("electrode number");
+  electrodeSelector = cp5.addScrollableList("electrodeSel").setPosition(graphsLeft+graphsWidth-296, 75);
+  electrodeSelector.hide();
+  customiseSL(electrodeSelector);
+  electrodeSelector.getCaptionLabel().set("electrode number");
   for (int i=0;i<numElectrodes;i++) {
     electrodeSelector.addItem("electrode "+i, i);
   }
-  electrodeSelector.setIndex(electrodeNumber);  
+  electrodeSelector.setValue(electrodeNumber); 
   
-  pauseInstructions = cp5.addTextlabel("pauseInstructions")
-                .setText("PRESS P TO PAUSE, PRESS IT AGAIN TO RESUME")
+  instructions = cp5.addTextlabel("pauseInstructions")
+                .setText("PRESS P TO PAUSE, PRESS IT AGAIN TO RESUME\nPRESS D TO DUMP DATA\nPRESS S TO SEE JUST FILTERED DATA (SOLO MODE)")
                 .setPosition(graphsLeft+graphsWidth-300,40)
                 .setColorValue(textColour)
-                ;   
+                ;
+  instructions.hide();                
 }
 
 void setupSerialPrompt(){
@@ -58,22 +66,34 @@ void setupSerialPrompt(){
   
   serialPrompt = cp5.addTextlabel("serialPromptLabel")
                   .setText("SELECT THE SERIAL PORT THAT YOUR BARE CONDUCTIVE TOUCH BOARD IS CONNECTED TO SO WE CAN BEGIN:")
-                  .setPosition(100,  100)
+                  .setPosition(100, 100)
                   .setColorValue(textColour)
                   ;   
   
-  serialSelector = cp5.addDropdownList("serialSel").setPosition(100, 150);
-  customiseDL(serialSelector);
-  serialSelector.captionLabel().set("serial port");
+  serialSelector = cp5.addScrollableList("serialSel").setPosition(103, 150);
+  customiseSL(serialSelector);
+  serialSelector.getCaptionLabel().set("serial port");
   for (int i=0;i<serialList.length;i++) {
     serialSelector.addItem(serialList[i], i);
   }
+  serialSelector.close();
   
 }
 
 void disableSerialPrompt(){
 
-  serialPrompt.setVisible(false);
-  serialSelector.setVisible(false);
+  serialPrompt.hide();
+  serialSelector.hide();
+  
+}
+
+void enableRunGUI(){
+
+  electrodeSelector.show();
+  instructions.show();
+  
+  for(int i=0; i<numFooterLabels + numVerticalDivisions + 1; i++){
+    labels[i].show();  
+  }
   
 }

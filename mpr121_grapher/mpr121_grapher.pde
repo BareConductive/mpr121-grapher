@@ -57,10 +57,11 @@ final int numFooterLabels = 6;
 boolean serialSelected = false;
 boolean firstRead = true;
 boolean paused = false;
+boolean soloMode = false;
 
 ControlP5 cp5;
-DropdownList electrodeSelector, serialSelector;
-Textlabel labels[], serialPrompt, pauseInstructions;
+ScrollableList electrodeSelector, serialSelector;
+Textlabel labels[], serialPrompt, instructions, pausedIndicator;
  
 Serial inPort;        // The serial port
 String[] serialList;
@@ -73,6 +74,7 @@ int globalGraphPtr = 0;
 
 int electrodeNumber = 0;
 int serialNumber = 4;
+int lastMillis = 0;
 
 void setup(){
   size(1024, 600);
@@ -83,6 +85,8 @@ void setup(){
   println(serialList); 
   
   setupSerialPrompt();
+  setupRunGUI();
+  setupLabels();
 }
 
 void draw(){ 
@@ -91,10 +95,16 @@ void draw(){
   if(serialSelected){
     drawGrid();
     drawGraphs(filteredGraph,electrodeNumber, filteredColour);
-    drawGraphs(baselineGraph,electrodeNumber, baselineColour);
-    drawGraphs(touchGraph,electrodeNumber, touchedColour);
-    drawGraphs(releaseGraph,electrodeNumber, releasedColour);
-    drawStatus(electrodeNumber);
+    if(!soloMode){
+      drawGraphs(baselineGraph,electrodeNumber, baselineColour);
+      drawGraphs(touchGraph,electrodeNumber, touchedColour);
+      drawGraphs(releaseGraph,electrodeNumber, releasedColour);
+      drawStatus(electrodeNumber);
+    }
+  }
+  if((millis() > lastMillis + 500) && paused){
+    lastMillis = millis();
+    pausedIndicator.setVisible(!pausedIndicator.isVisible());  
   }
 }
 
@@ -102,8 +112,6 @@ void draw(){
 void serialEvent(Serial p) {
  
   if(serialSelected && !paused){ 
-  
-    int[] dataToUpdate;
     
     inString = p.readString(); 
     splitString = splitTokens(inString, ": ");
@@ -131,44 +139,95 @@ void serialEvent(Serial p) {
 } 
 
 void controlEvent(ControlEvent theEvent) {
-  // DropdownList is of type ControlGroup.
-  // A controlEvent will be triggered from inside the ControlGroup class.
-  // therefore you need to check the originator of the Event with
-  // if (theEvent.isGroup())
-  // to avoid an error message thrown by controlP5.
+  
+  if(theEvent.isFrom(cp5.getController("electrodeSel"))){
+    electrodeNumber = (int)theEvent.getController().getValue();
+  } else if(theEvent.isFrom(cp5.getController("serialSel"))) {
+    serialNumber = (int)theEvent.getController().getValue();
+    inPort = new Serial(this, Serial.list()[serialNumber], baudRate);
+    inPort.bufferUntil(lf);
+    
+    disableSerialPrompt();
+    enableRunGUI();
 
-  if (theEvent.isGroup()) {
-    // check if the Event was triggered from a ControlGroup
-    //println("event from group : "+theEvent.getGroup().getValue()+" from "+theEvent.getGroup());
-    if(theEvent.getGroup().getName().contains("electrodeSel")){
-      electrodeNumber = (int)theEvent.getGroup().getValue();
-    } else if(theEvent.getGroup().getName().contains("serialSel")) {
-      serialNumber = (int)theEvent.getGroup().getValue();
-      inPort = new Serial(this, Serial.list()[serialNumber], baudRate);
-      inPort.bufferUntil(lf);
-      
-      disableSerialPrompt();
-      setupRunGUI();
-      setupLabels();
-      serialSelected = true;
-    }
-  } 
-  else if (theEvent.isController()) {
+    serialSelected = true;
   }
 }
 
 void keyPressed() {
-  if (key == CODED) {
-    if (keyCode == LEFT) {
-      if(electrodeSelector.getValue()>0){
-        electrodeSelector.setIndex((int)electrodeSelector.getValue()-1);
+  if(serialSelected){
+    if (key == CODED) {
+      if (keyCode == LEFT) {
+        if(electrodeSelector.getValue()>0){
+          electrodeSelector.setValue((int)electrodeSelector.getValue()-1);
+        }
+      } else if (keyCode == RIGHT) {
+        if(electrodeSelector.getValue()<numElectrodes-1){
+          electrodeSelector.setValue((int)electrodeSelector.getValue()+1);
+        }
+      } 
+    } else if (key == 'p' || key == 'P') {
+      paused = !paused;
+      lastMillis = millis();
+      if(paused){
+        pausedIndicator.setVisible(true);  
+      } else {
+        pausedIndicator.setVisible(false);
       }
-    } else if (keyCode == RIGHT) {
-      if(electrodeSelector.getValue()<numElectrodes){
-        electrodeSelector.setIndex((int)electrodeSelector.getValue()+1);
-      }
-    } 
-  } else if (key == 'p' || key == 'P') {
-    paused = !paused;
+    } else if (key == 's' || key == 'S') {
+      soloMode = !soloMode;
+      for(int i=1; i<numFooterLabels; i++){
+        if(soloMode){
+          labels[i+numVerticalDivisions+1].setVisible(false);
+        } else {
+          labels[i+numVerticalDivisions+1].setVisible(true);  
+        }
+      }   
+    } else if (key == 'd' || key == 'D') {
+      csvDump();  
+    }
   }
+}
+
+void csvDump(){
+
+    String outFileName;
+    PrintWriter outFile;
+    int i;
+    int j;
+    
+    outFileName = "CSV dumps/CSV dump " + nf(year(),4) + "-" + nf(month(),2) + "-" + nf(day(),2) + " at " + nf(hour(),2) + "." + nf(minute(),2) + "." + nf(second(),2) + ".csv";
+    outFile = createWriter(outFileName);
+    
+    // columns: E0 filtered data, E0 baseline data, E0 touch threshold, E0 release threshold, E1 filtered data...
+    for(i=0; i<numElectrodes; i++){
+      outFile.print("E" + str(i) + " filtered data," + "E" + str(i) + " baseline data," + "E" + str(i) + " touch threshold," + "E" + str(i) + " release threshold");
+      if(i==numElectrodes-1){
+        outFile.println(); // end of line doesn't need any extra commas
+      } else {
+        outFile.print(","); // add a comma to separate next batch of headers
+      } 
+    } 
+    
+    int localGraphPtr = globalGraphPtr;
+    int numPointsWritten = 0;
+    
+    while(numPointsWritten < numGraphPoints){
+      for(i=0; i<numElectrodes; i++){
+        outFile.print(str(filteredGraph[i][localGraphPtr]) + "," + str(baselineGraph[i][localGraphPtr]) + "," + str(touchGraph[i][localGraphPtr]) + "," + str(releaseGraph[i][localGraphPtr]));
+        if(i==numElectrodes-1){
+          outFile.println(); // end of line doesn't need any extra commas
+        } else {
+          outFile.print(","); // add a comma to separate next batch of headers
+        } 
+      } 
+      if(++localGraphPtr>=numGraphPoints) localGraphPtr = 0;
+      numPointsWritten++;
+    }
+      
+    // flush the changes and close the file
+    outFile.flush();
+    outFile.close();
+    
+    println("CSV snapshot dumped to " + sketchPath(outFileName));
 }

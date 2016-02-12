@@ -16,4 +16,5 @@ xcuserdata
 # svn & cvs
 .svn
 CVS
-/mpr121_grapher/application.*
+mpr121_grapher/application.*
+mpr121_grapher/CSV dumps
