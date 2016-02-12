@@ -5,10 +5,12 @@
  
  mpr121_grapher.pde - processing grapher for raw data from Touch Board
  
- requires controlp5 (version 2.0.4) to be in your processing libraries folder: 
+ Requires Processing 3.0+
+ 
+ Requires controlp5 (version 2.2.5+) to be in your processing libraries folder: 
  http://www.sojamo.de/libraries/controlP5/
  
- requires datastream on the Touch Board: 
+ Requires datastream on the Touch Board: 
  https://github.com/BareConductive/mpr121/tree/public/Examples/DataStream
  
  Bare Conductive code written by Stefan Dzisiewski-Smith.
