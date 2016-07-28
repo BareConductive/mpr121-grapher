@@ -2,7 +2,7 @@
 
 # Bare Conductive MPR121 grapher
 
-Processing sketch that graphs capacitive electrode data from the [Bare Conductive Touch Board](http://www.bareconductive.com/shop/touch-board/) over time. 
+Processing sketch that graphs capacitive electrode data from the [Bare Conductive Touch Board](http://www.bareconductive.com/shop/touch-board/) or [Bare Conductive Pi Cap](http://www.bareconductive.com/shop/pi-cap/) over time. 
 
 ## Requirements
 
