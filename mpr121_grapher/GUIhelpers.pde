@@ -72,9 +72,11 @@ void setupStartPrompt(){
   serialSelector = cp5.addScrollableList("serialSel").setPosition(103, 150);
   customiseSL(serialSelector);
   serialSelector.getCaptionLabel().set("serial port");
-  for (int i = 0; i < serialList.length; i++) {
-    serialSelector.addItem(serialList[i], i);
+
+  for (int i = 0; i < validSerialList.length; i++) {
+    serialSelector.addItem(validSerialList[i], i);
   }
+  
   serialSelector.close();
 
   oscButton = cp5

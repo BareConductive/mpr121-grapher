@@ -78,6 +78,7 @@ OscP5 oscP5;
 
 Serial inPort;        // the serial port
 String[] serialList;
+String[] validSerialList;
 String inString;      // input string from serial port
 String[] splitString; // input string array after splitting
 int lf = 10;          // ASCII linefeed
@@ -100,7 +101,24 @@ void setup() {
   oscP5 = new OscP5(this, 3000);
 
   // init serial
+  int validPortCount = 0;
+
   serialList = Serial.list();
+  
+  for (int i = 0; i < serialList.length; i++) {
+    if(!(serialList[i].toLowerCase().contains("/dev/tty.") ||serialList[i].toLowerCase().contains("bluetooth"))){
+      validPortCount++;
+    }
+  }
+  
+  validSerialList = new String[validPortCount];
+  validPortCount = 0;
+  
+  for (int i = 0; i < serialList.length; i++) {
+    if(!(serialList[i].toLowerCase().contains("/dev/tty.") ||serialList[i].toLowerCase().contains("bluetooth"))){
+      validSerialList[validPortCount++] = serialList[i];
+    }
+  }  
 
   setupGraphs();
 
@@ -204,7 +222,7 @@ void controlEvent(ControlEvent controlEvent) {
   }
   else if (controlEvent.isFrom(cp5.getController("serialSel"))) {
     serialNumber = (int)controlEvent.getController().getValue();
-    inPort = new Serial(this, Serial.list()[serialNumber], baudRate);
+    inPort = new Serial(this, validSerialList[serialNumber], baudRate);
     inPort.bufferUntil(lf);
 
     disableStartPrompt();
