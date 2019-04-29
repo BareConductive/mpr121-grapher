@@ -16,5 +16,9 @@ xcuserdata
 # svn & cvs
 .svn
 CVS
+
+# mpr121
 mpr121_grapher/application.*
 mpr121_grapher/CSV dumps
+mpr121_grapher/data/settings.json
+mpr121_grapher/*.autosave

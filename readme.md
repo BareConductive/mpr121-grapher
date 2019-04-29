@@ -36,3 +36,8 @@ Processing sketch that graphs capacitive electrode data from the [Bare Conductiv
 
 	If this folder does not exist, create it first.
 1. Reopen the Processing IDE - you should now be able to open the sketch in the **File -> Sketchbook** menu.
+
+## Note
+
+The new functions in this version of the Grapher use EEPROM to save and restore thresholds automatically when setting them. However, if you're using a SAMD21 or SAMD51 board (like the Arduino Zero or Adafruit Metro M4), these MCUs don't have onboard EEPROM. As a result, these functions will not work.
+
